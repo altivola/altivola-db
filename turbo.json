@@ -1,6 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalPassThroughEnv": ["SECRETS_DIR"],
+  "globalPassThroughEnv": ["ALTIVOLA_DB_*", "API_URL", "VERSION"],
   "tasks": {
     "dev": {
       "cache": false,

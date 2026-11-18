@@ -10,6 +10,6 @@ Thanks for helping out.
    pnpm exec biome ci . && pnpm typecheck && pnpm test && pnpm build
    ```
 4. If you changed an API procedure, run `pnpm openapi` and commit the updated `apps/api/openapi.json`.
-5. Use conventional commit messages, for example `feat: add note search` or `fix: keep notes sorted`.
+5. Use conventional commit messages, for example `feat: describe Redis streams` or `fix: keep the MySQL session after a cut result`.
 
-New queries need an integration test, and new tables need a migration in `packages/db/migrations/`. See `CLAUDE.md` for the project rules.
+Driver changes need an integration test in `packages/core/test/` against a real database (testcontainers starts it). See `CLAUDE.md` for the project rules.

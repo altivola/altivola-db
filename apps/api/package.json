@@ -3,31 +3,29 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --env-file-if-exists=../../.env src/node.ts",
+    "dev": "ALTIVOLA_DB_TOKEN=dev-token tsx watch src/main.ts serve --no-browser --addr 127.0.0.1:7800",
+    "cli": "tsx src/main.ts",
     "build": "tsx scripts/build.ts",
-    "start": "node --enable-source-maps dist/node.js",
+    "start": "node --enable-source-maps dist/altivola-db.js",
     "openapi": "tsx scripts/openapi.ts",
-    "typecheck": "tsc -p . && wrangler types src/cloudflare/worker-configuration.d.ts > /dev/null && tsc -p tsconfig.worker.json",
-    "dev:worker": "wrangler dev",
-    "deploy": "pnpm --filter @app/web build && wrangler deploy"
+    "typecheck": "tsc -p .",
+    "test": "vitest run"
   },
   "dependencies": {
     "@app/api": "workspace:*",
-    "@app/auth": "workspace:*",
-    "@app/db": "workspace:*",
+    "@app/core": "workspace:*",
     "@hono/node-server": "^2.1.9",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@orpc/openapi": "^1.16.2",
     "@orpc/server": "^1.16.2",
     "@orpc/zod": "^1.16.2",
-    "@sentry/node": "^11.13.0",
     "hono": "^4.13.19",
-    "pg-boss": "^12.38.2",
-    "postgres": "^4.1.1",
     "zod": "^4.6.7"
   },
   "devDependencies": {
     "esbuild": "^0.28.2",
     "tsx": "^4.23.15",
-    "wrangler": "^4.164.0"
+    "vitest": "^5.1.0",
+    "@app/web": "workspace:*"
   }
 }

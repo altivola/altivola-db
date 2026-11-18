@@ -1,121 +1,261 @@
-# Starter
+# altivola-db
 
-Template for my personal open source apps. One TypeScript monorepo with an API and a web app that work on day one: sign in by email link, a small notes feature, background jobs, API docs, tests, Docker, and CI.
+A slim, local database client for **PostgreSQL**, **MySQL/MariaDB**, **SQLite**, **SQL Server**, **MongoDB** and
+**Redis**, with a built-in **MCP server** so AI agents (Claude Code, Claude Desktop, Cursor, and others) can query your
+databases too.
 
-The reasons behind every choice are in my private playbook repo. This README is about using the template.
+It runs on your machine (best in Docker), opens in your browser and only listens on localhost. Databases you reach
+over a VPN work, because the queries leave from your own machine.
 
-## What's inside
+It is the successor of [slimdb](https://github.com/jabbar-hafizh/slimdb), rebuilt in TypeScript, and reads slimdb's
+saved connections as they are.
 
-| Part     | Stack                                                                          |
-| -------- | ------------------------------------------------------------------------------ |
-| API      | Hono + oRPC, runs on Node or Cloudflare Workers                                |
-| Database | Postgres, raw SQL with postgres.js, migrations as plain `.sql` files (dbmate)  |
-| Auth     | Better Auth: email magic link, plus Google/GitHub when their keys are set      |
-| Jobs     | One `jobs.enqueue()` API: pg-boss on Node, Cloudflare Queues on Workers        |
-| API docs | Generated from the code, Scalar UI at `/api`                                   |
-| Web      | Vite + React + TanStack Router/Query, Tailwind v4 + shadcn/ui, installable PWA |
-| Email    | Mailpit locally, Resend in production                                          |
-| Tooling  | pnpm + Turborepo, Biome, Vitest + testcontainers, GitHub Actions, Renovate     |
+## Features
 
-## Quick start
+- **Connections** for PostgreSQL, MySQL/MariaDB, SQLite, SQL Server, MongoDB and Redis, saved locally, with an
+  optional read-only flag. A name like `team/dev/app` puts the connection in a `team` folder in the sidebar.
+- **Object tree**: schemas, tables and views (SQL), databases and collections (MongoDB), databases and keys (Redis),
+  with a filter.
+- **Query tabs**: as many consoles as you like, each on its own connection (and MongoDB or Redis database), kept between
+  sessions, with autocomplete for keywords, snippets (`sel` + Tab gives `select * from`), tables, columns (also after
+  an alias, `c.`), Mongo collections, methods, fields and operators, and Redis commands.
+- **Results grid**: typed column headers, sort by column, NULLs marked, JSON view for documents, copy as CSV or JSON.
+  Large results scroll smoothly.
+- **Edit data in the grid**: change cells, add and delete rows, then submit them in one go (one transaction on SQL
+  databases).
+- **Describe**: columns, indexes and constraints, or inferred fields and indexes for MongoDB.
+- **Explain**, optionally with `analyze` (Postgres, MySQL and SQL Server roll the statement back).
+- **History** of everything run, from the UI and from AI agents.
+- **Dump and import**: dump a database to a file, import a dump file, or copy a database straight into another
+  connection, e.g. dev into local (Postgres and MongoDB).
+- **MCP server**: list connections, browse objects, describe, query, explain.
+- **REST API** with docs at `/api`, the same one the UI uses.
 
-Needs Node 24+, Docker, and corepack (comes with Node).
+## Run it with Docker
+
+```sh
+docker run -d --name altivola-db --restart unless-stopped \
+  -p 127.0.0.1:7789:7789 -v altivola-db-data:/data \
+  --add-host host.docker.internal:host-gateway \
+  ghcr.io/altivola/altivola-db:latest
+```
+
+or, from a clone of this repo, `docker compose up -d`. Then open http://localhost:7789.
+
+- `localhost` in a connection URL means your machine, not the container: the image rewrites it to
+  `host.docker.internal` (set `ALTIVOLA_DB_LOCALHOST_ALIAS=` to turn that off). For databases in other containers,
+  use their container or service name.
+- Keep the port published on `127.0.0.1` as above. Anyone who can reach the port can run queries.
+- Manage connections from the terminal with `docker exec altivola-db altivola-db conn add ...`. Do not run a bare
+  `docker exec altivola-db altivola-db`: with no command it starts a second server inside the container.
+- MCP through the running container: `claude mcp add altivola-db -- docker exec -i altivola-db altivola-db mcp`
+- The image has the PostgreSQL 18 client tools (`pg_dump`, `pg_restore`, `psql`) for dump, import and copy.
+- Update: `docker compose pull && docker compose up -d`.
+
+## Coming from slimdb
+
+The connection file has the same format. Copy slimdb's file out of its container and import it:
+
+```sh
+docker cp slimdb:/data/connections.json ./slimdb-connections.json
+docker cp ./slimdb-connections.json altivola-db:/tmp/slimdb-connections.json
+docker exec altivola-db altivola-db conn import /tmp/slimdb-connections.json
+rm ./slimdb-connections.json   # it holds passwords
+```
+
+MongoDB dumps made by slimdb (`.mongo.gz`) import too.
+
+## Connection URLs
+
+| Database        | URL                                                                       |
+| --------------- | ------------------------------------------------------------------------- |
+| PostgreSQL      | `postgres://postgres:secret@localhost:5432/app`                           |
+| MySQL / MariaDB | `mysql://root:secret@localhost:3306/app` (`mariadb://` works too)         |
+| SQLite          | `sqlite:///absolute/path/app.db` or `sqlite:app.db` (the file must exist) |
+| SQL Server      | `sqlserver://sa:secret@localhost:1433?database=app`                       |
+| MongoDB         | `mongodb://localhost:27017/shop`                                          |
+| Redis           | `redis://:secret@localhost:6379/0` (`rediss://` for TLS)                  |
+
+- Postgres `sslmode` works like it does in `psql`: `require` encrypts without checking the certificate.
+- With Docker, a SQLite file has to be mounted into the container, e.g. `-v ~/data:/sqlite`, then use
+  `sqlite:///sqlite/app.db`.
+
+## Running queries
+
+| Shortcut                  | Action                                                                                   |
+| ------------------------- | ---------------------------------------------------------------------------------------- |
+| Ctrl/Cmd + Enter          | Run the selection, or the block around the cursor (blocks are separated by a blank line) |
+| Ctrl/Cmd + Shift + Enter  | Run the whole editor                                                                     |
+| Tab                       | Accept the highlighted suggestion                                                        |
+| Ctrl + Space              | Show suggestions                                                                         |
+| Click a table             | Describe it                                                                              |
+| Double-click a table      | Query its first 100 rows                                                                 |
+| Double-click a cell       | Edit it (editable results) or show the full value                                        |
+| Tab / Shift+Tab (editing) | Save the cell and edit the next one                                                      |
+| Delete                    | Mark the selected row for deletion                                                       |
+
+Results are capped by the **Limit** selector (default 500). Postgres SELECTs run through a cursor, and the other
+drivers stop reading at the limit, so a query on a huge table only fetches what is shown.
+
+### Editing data
+
+A result is editable when its rows come from one table and include the table's primary key (for MongoDB: documents
+from `find` with their `_id`). The status line then says _editable_. Double-click a cell to change it, use **+ Row**,
+**− Row** and **NULL**, and **Submit** to save. Changes stay pending (highlighted) until you submit, and **Revert**
+drops them. After a submit, only the statement behind the result runs again.
+
+- SQL databases save all changes in one transaction. An update or delete that would hit more or less than exactly one
+  row fails, and nothing is saved.
+- MongoDB values are typed as JSON: `42`, `true`, `["a", "b"]`, `{"$date": "2026-01-01T00:00:00Z"}`. Text fields are
+  edited without quotes. MongoDB has no transactions on a single server, so changes run in order and stop at the first
+  failure.
+- Read-only connections never show the edit buttons.
+
+### MongoDB syntax
+
+altivola-db understands the common mongosh forms. It parses them, it does not run JavaScript, so variables and loops
+are not supported.
+
+```js
+show dbs
+show collections
+use shop
+
+db.orders.find({ status: "paid" }, { items: 0 }).sort({ at: -1 }).limit(20)
+db.orders.aggregate([{ $group: { _id: "$status", n: { $sum: 1 } } }])
+db.orders.countDocuments({ at: { $gte: ISODate("2026-01-01") } })
+db.orders.distinct("status")
+db.orders.insertOne({ item: "coffee", qty: 2 })
+db.orders.updateMany({ status: "new" }, { $set: { status: "paid" } })
+db.orders.deleteOne({ _id: ObjectId("65a1b2c3d4e5f60718293a4b") })
+db.orders.createIndex({ at: -1 }, { name: "at_desc" })
+db.getCollection("order items").find()
+db.runCommand({ dbStats: 1 })
+```
+
+Helpers: `ObjectId`, `ISODate`/`new Date`, `NumberLong`, `NumberInt`, `NumberDecimal`, `UUID`, and regular
+expressions like `/^ab/i`.
+
+### Redis
+
+One command per line, quoted like a shell: `HGETALL user:42`, `SET greeting "hello world"`. Pick the database (`db0`,
+`db1`, …) in the selector next to the connection name or by clicking it in the tree; double-clicking a key reads it
+with the command for its type. Redis results are not editable in the grid; use commands.
+
+### Dump, import and copy
+
+Pick a Postgres or MongoDB connection and click **Dump / Import…**:
+
+- **Dump to file** downloads the database into your browser's download folder: a pg_dump custom-format `.dump` for
+  Postgres (`pg_restore` reads it too), a `.mongo.gz` for MongoDB.
+- **Import file** loads such a file into the selected connection. For Postgres a plain `.sql` file works too; it runs
+  as it is.
+- **Copy to connection** copies straight into another connection of the same kind, for example from the shared dev
+  database into the one on your machine.
+
+| Mode                 | What it does                                                              |
+| -------------------- | ------------------------------------------------------------------------- |
+| Everything (default) | Schema and data. Matching tables are dropped and recreated in the target  |
+| Schema only          | Tables, indexes, functions and so on, no rows                             |
+| Data only            | Empties the tables that already exist in the target, then copies the rows |
+
+- Postgres goes through `pg_dump | pg_restore` (owners and grants are left out). A missing target database is
+  created. Limit the copy to some schemas with the Schemas field.
+- MongoDB collections are copied with their indexes. Views are skipped.
+- Statements the target cannot run, such as an extension it does not have, are reported as warnings and the copy goes
+  on.
+- A read-only connection is never a target. A target that is not on your machine must be confirmed by typing its name.
+
+## Command line
+
+```sh
+altivola-db                                   # the web UI on http://127.0.0.1:7789
+altivola-db conn add local-pg postgres://postgres:secret@localhost:5432/app
+altivola-db conn add --read-only prod-replica postgres://readonly@replica:5432/app
+altivola-db conn rename local-pg work/dev/app
+altivola-db conn list
+altivola-db conn import connections.json      # a slimdb or altivola-db file
+altivola-db dump dev/app                      # writes dev-app-<date>.dump here
+altivola-db import dev-app-20261115-1304.dump local/app
+altivola-db copy dev/app local/app            # everything
+altivola-db copy --mode data --schema public dev/app local/app
+altivola-db mcp                               # the MCP server on stdio
+```
+
+In Docker, put `docker exec altivola-db` (or `docker exec -i` for `mcp`) in front.
+
+## Use it with AI agents (MCP)
+
+| Tool               | What it does                                                      |
+| ------------------ | ----------------------------------------------------------------- |
+| `list_connections` | Saved connections (names and kinds, never URLs or passwords)      |
+| `add_connection`   | Save a new connection after testing it                            |
+| `list_objects`     | Schemas and tables, or databases and collections                  |
+| `describe`         | Columns, indexes, constraints, or inferred Mongo fields           |
+| `query`            | Run SQL, mongosh or Redis statements (default 100 rows, max 1000) |
+| `explain`          | Query plan, optionally with analyze                               |
+
+**Claude Code:** `claude mcp add altivola-db -- docker exec -i altivola-db altivola-db mcp`
+
+**Claude Desktop, Cursor and other clients** (JSON config):
+
+```json
+{
+  "mcpServers": {
+    "altivola-db": { "command": "docker", "args": ["exec", "-i", "altivola-db", "altivola-db", "mcp"] }
+  }
+}
+```
+
+> **Agents can write.** The `query` tool runs whatever it is given, including `UPDATE`, `DELETE` and `drop()`. Mark a
+> connection read-only (in the UI or with `conn add --read-only`) for anything you do not want an agent to change. For a
+> hard guarantee, connect with a database user that only has read access.
+
+## Where things are stored
+
+Connections and history live in `/data` in the container (the `altivola-db-data` volume), or, when run from source, in
+your user config folder under `altivola-db/` (`~/Library/Application Support` on macOS, `~/.config` on Linux,
+`%AppData%` on Windows). Set `ALTIVOLA_DB_HOME` to use another folder. Connection URLs, passwords included, are stored
+in plain text in `connections.json` with file mode 0600.
+
+## Security notes
+
+- The server only answers requests for `localhost`/loopback hosts, which blocks DNS-rebinding attacks, and every API
+  call needs a random token issued per run and put in the page, which blocks other websites from calling the API
+  (CSRF).
+- `altivola-db serve` refuses to listen on a non-loopback address (the Docker image opts in and publishes the port on
+  `127.0.0.1`).
+- The read-only flag sets `default_transaction_read_only` on Postgres, a read-only session on MySQL, read-only mode on
+  SQLite, and refuses writing statements on SQL Server, write methods on MongoDB and write commands on Redis. It guards
+  against mistakes; it is not a security boundary.
+
+## Development
+
+Needs Node 24, pnpm (through corepack) and Docker.
 
 ```sh
 corepack enable
 pnpm install
-pnpm env:pull               # .env from my private secrets repo, or: cp .env.example .env
-docker compose up -d        # Postgres, migrations, Mailpit
-pnpm dev                    # API on :3000, web on :5173
+pnpm dev        # API on :7800, web on http://localhost:5173 (Vite, proxying /rpc, /api and /files)
+pnpm test       # unit tests, plus integration tests on real databases started by testcontainers
+pnpm build      # apps/api/dist/altivola-db.js with the web app next to it
+pnpm cli conn list
 ```
 
-Open http://localhost:5173, enter any email, then open the sign in link from Mailpit at http://localhost:8025.
+Set `SKIP_SQLSERVER=1` to skip the SQL Server tests on a machine that cannot run its image.
 
-If port 5432 is already taken, set `DB_PORT` in `.env` and use the same port in `DATABASE_URL`.
-
-## Commands
-
-| Command                                   | What it does                                                            |
-| ----------------------------------------- | ----------------------------------------------------------------------- |
-| `pnpm dev`                                | API and web with hot reload                                             |
-| `docker compose up -d`                    | Postgres + migrations + Mailpit                                         |
-| `docker compose --profile app up --build` | Everything in Docker, like production, on http://localhost:8080         |
-| `pnpm lint` / `pnpm format`               | Biome check / fix                                                       |
-| `pnpm typecheck`                          | TypeScript in every package                                             |
-| `pnpm test`                               | Integration tests against a real Postgres (needs Docker)                |
-| `pnpm build`                              | Build the API bundle and the web app                                    |
-| `pnpm openapi`                            | Write `apps/api/openapi.json` (CI fails if it is out of date)           |
-| `pnpm --filter @app/server dev:worker`    | Run the API in the local Workers runtime                                |
-| `pnpm env:pull`                           | Copy `local.env` from the secrets repo (`../secrets/<name>/`) to `.env` |
-| `pnpm secrets:push`                       | Upload `prod.env` from the secrets repo to the Worker as secrets        |
-
-## Layout
+Layout:
 
 ```
-apps/
-  api/            @app/server  Hono host: Node entry (src/node.ts), Workers entry (src/cloudflare/)
-  web/            @app/web     Vite SPA + PWA
-packages/
-  api/            @app/api     oRPC router, Zod schemas, raw SQL, job definitions
-  db/             @app/db      postgres.js client, migrations/
-  auth/           @app/auth    Better Auth config
-  ui/             @app/ui      tokens.css (brand colors)
-compose.yaml
+packages/core   drivers (one per database), saved connections and history, grid edits,
+                dump/import/copy, SQL splitter, mongosh parser
+packages/api    oRPC procedures the UI and the REST API share
+apps/api        the server (Hono), CLI and MCP server, bundled into one file
+apps/web        the UI (React, CodeMirror, shadcn/ui)
 ```
 
-The web app and the API always share one origin: the Vite proxy in dev, nginx in Docker, Workers routes in production. That is why there is no CORS setup and the session cookie just works.
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Common tasks
+## License
 
-**Add an API endpoint.** Add a procedure in `packages/api/src/` (see `notes.ts`), put it in the router in `index.ts`, then run `pnpm openapi`. The web app sees the new types right away.
-
-**Add a migration.** Create `packages/db/migrations/<YYYYMMDDHHMMSS>_<name>.sql` with `-- migrate:up` and `-- migrate:down` sections, then `docker compose up migrate`.
-
-**Write a query.** Use the `sql` tagged template. Values in `${...}` are sent as parameters, so never build SQL by joining strings. Result types are written by hand, so cover the query with an integration test (see `packages/api/test/notes.test.ts`).
-
-**Add a background job.** Add its payload type and handler in `packages/api/src/jobs.ts`, then call `context.jobs.enqueue(name, payload)`.
-
-**Add a UI component.** `cd apps/web && pnpm dlx shadcn@latest add <component>`.
-
-**Change Better Auth plugins.** Run `pnpm --filter @app/auth schema` with the database up, and put the new tables or columns in a new migration.
-
-## Using this template for a new project
-
-1. `gh repo create altivola/altivola-<thing> --template altivola/starter --public --clone`
-2. Replace `App` in `apps/web/index.html`, `apps/web/vite.config.ts` (PWA manifest), `apps/web/src/routes/root.tsx`, and `apps/api/src/app.ts` (`openapiInfo`).
-3. Replace the Worker name, Hyperdrive id, queue name, and `BETTER_AUTH_URL` in `apps/api/wrangler.jsonc` (see Deploy).
-4. Delete the notes example once you have your own feature (procedure, migration, test, page).
-5. Pick the license: MIT for libraries and CLIs, AGPL for apps people can self host.
-6. Turn on the Renovate GitHub app for the repo.
-
-## Deploy
-
-**Self host:** `docker compose --profile app up --build -d` behind a reverse proxy with HTTPS. Set `BETTER_AUTH_URL` to the public URL and use `MAIL_PROVIDER=resend`.
-
-**Cloudflare (free phase):** one Worker serves both the web app (static assets) and the API, so they share one origin on `workers.dev` with no custom domain. Postgres is Neon, reached through Hyperdrive. Live example: https://starter.altivola.workers.dev
-
-First deploy of a new project, from `apps/api`:
-
-1. `pnpm exec wrangler login`
-2. Create a Neon project (region closest to your users) and copy its direct connection string (pooling off).
-3. `pnpm exec wrangler hyperdrive create <name>-db --caching-disabled --connection-string="<neon url>"` and put the id in `wrangler.jsonc`. Keep caching off: cached reads return stale sessions and break rate limiting.
-4. `pnpm exec wrangler queues create <name>-jobs` and use that name in `wrangler.jsonc`.
-5. Run the migrations on Neon:
-   `docker run --rm -v "$PWD/../../packages/db/migrations:/migrations:ro" -e DATABASE_URL="<neon url>" ghcr.io/amacneil/dbmate:2 --no-dump-schema --migrations-dir /migrations up`
-6. Set `BETTER_AUTH_URL` in `wrangler.jsonc` to `https://<worker name>.<your subdomain>.workers.dev`.
-7. `pnpm run deploy` (builds the web app, then `wrangler deploy`).
-8. Secrets: put them in `../secrets/<name>/prod.env` (a new `BETTER_AUTH_SECRET`, not the local one, plus the OAuth keys), then `pnpm secrets:push` from the repo root.
-9. Add `https://<your url>/api/auth/callback/google` and `.../github` to the OAuth apps.
-
-**Automatic deploys:** after the first deploy, every push to `main` runs the `deploy` job in CI once the checks pass: migrations on Neon, Hyperdrive URL, `wrangler deploy`, then Worker secrets. It reads every value from the private secrets repo, so it needs:
-
-- secret `SECRETS_REPO_TOKEN`: set once on the `altivola` org, shared by every repo (the GitHub token `GH_DEPLOY_TOKEN` from `secrets/ci.env`)
-- repo variable `DEPLOY=cloudflare` (a new repo from this template does not deploy until it is set)
-
-Changing `prod.env` in the secrets repo starts the same job.
-
-Sign in stays passwordless (magic link or OAuth) because the free Workers plan allows 10 ms of CPU per request, which password hashing goes over. `MAIL_PROVIDER` is `none` until Resend is set up, which hides the email option.
-
-## Brand
-
-Black, yellow `#FAFB03`, and white. Yellow is only used as a fill behind black text (`highlight` class, primary buttons in dark mode), never as text on white. Tokens live in `packages/ui/tokens.css`.
+[MIT](LICENSE)

@@ -5,9 +5,10 @@ packages:
 # pnpm only runs install scripts for packages listed here.
 allowBuilds:
   esbuild: true
-  # Cloudflare's local runtime, used by `wrangler dev`.
-  workerd: true
-  # Optional native speedups pulled in by testcontainers and Sentry; not needed.
+  # Optional native speedups pulled in by testcontainers; not needed.
   cpu-features: false
   ssh2: false
   protobufjs: false
+
+minimumReleaseAgeExclude:
+  - react-resizable-panels@4.24.1

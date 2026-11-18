@@ -1,0 +1,30 @@
+{
+  "name": "@app/core",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "acorn": "^8.19.0",
+    "mongodb": "^7.9.0",
+    "mssql": "^12.7.14",
+    "mysql2": "^3.24.6",
+    "pg": "^8.23.1",
+    "redis": "^6.3.1"
+  },
+  "devDependencies": {
+    "@testcontainers/mongodb": "^12.2.1",
+    "@testcontainers/mssqlserver": "^12.2.1",
+    "@testcontainers/mysql": "^12.2.1",
+    "@testcontainers/postgresql": "^12.2.1",
+    "@testcontainers/redis": "^12.2.1",
+    "@types/mssql": "^12.3.0",
+    "@types/pg": "^8.23.1",
+    "vitest": "^5.1.0"
+  }
+}

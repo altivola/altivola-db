@@ -1,29 +1,40 @@
 import '@/index.css'
-import * as Sentry from '@sentry/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { createRouter, RouterProvider } from '@tanstack/react-router'
-import { StrictMode } from 'react'
+import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { loginRoute } from '@/routes/login'
-import { notesRoute } from '@/routes/notes'
-import { rootRoute } from '@/routes/root'
+import { ConnDialog } from '@/components/conn-dialog'
+import { Sidebar } from '@/components/sidebar'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
+import { Toaster } from '@/components/ui/sonner'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { Workspace } from '@/components/workspace'
+import type { Conn } from '@/lib/api'
+import { loadConnections } from '@/lib/state'
 
-if (import.meta.env.VITE_SENTRY_DSN) {
-  Sentry.init({ dsn: import.meta.env.VITE_SENTRY_DSN })
-}
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } } })
 
-const queryClient = new QueryClient()
+function App() {
+  // undefined: closed, null: a new connection, Conn: editing that one.
+  const [editing, setEditing] = useState<Conn | null | undefined>(undefined)
+  useEffect(() => {
+    void loadConnections()
+  }, [])
 
-const router = createRouter({
-  routeTree: rootRoute.addChildren([notesRoute, loginRoute]),
-  context: { queryClient },
-  defaultPreload: 'intent',
-})
-
-declare module '@tanstack/react-router' {
-  interface Register {
-    router: typeof router
-  }
+  return (
+    <div className="h-dvh">
+      <ResizablePanelGroup orientation="horizontal" id="altivola-db-layout">
+        <ResizablePanel defaultSize="260px" minSize="180px" maxSize="50%">
+          <Sidebar onAdd={() => setEditing(null)} onEdit={(c) => setEditing(c)} />
+        </ResizablePanel>
+        <ResizableHandle />
+        <ResizablePanel minSize="40%">
+          <Workspace />
+        </ResizablePanel>
+      </ResizablePanelGroup>
+      {editing !== undefined && <ConnDialog conn={editing ?? undefined} onClose={() => setEditing(undefined)} />}
+      <Toaster position="bottom-center" />
+    </div>
+  )
 }
 
 const root = document.getElementById('root')
@@ -32,7 +43,9 @@ if (!root) throw new Error('missing #root')
 createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <TooltipProvider>
+        <App />
+      </TooltipProvider>
     </QueryClientProvider>
   </StrictMode>,
 )

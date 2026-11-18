@@ -1,5 +1,5 @@
 {
-  "name": "starter",
+  "name": "altivola-db",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.21.0",
@@ -14,10 +14,7 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "openapi": "pnpm --filter @app/server openapi",
-    "db:up": "docker compose up -d",
-    "db:down": "docker compose down",
-    "env:pull": "node scripts/secrets.ts pull",
-    "secrets:push": "node scripts/secrets.ts push"
+    "cli": "pnpm --filter @app/server cli"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.8",

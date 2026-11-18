@@ -11,13 +11,18 @@
       "automerge": true
     },
     {
-      "description": "Keep the Better Auth library and its CLI on the same version",
-      "matchPackageNames": ["better-auth", "auth"],
-      "groupName": "better-auth"
-    },
-    {
       "matchPackageNames": ["/^@orpc//"],
       "groupName": "orpc"
+    },
+    {
+      "description": "Keep the CodeMirror packages together",
+      "matchPackageNames": ["/^@codemirror//", "/^@lezer//"],
+      "groupName": "codemirror"
+    },
+    {
+      "description": "Keep the testcontainers modules together",
+      "matchPackageNames": ["/^@testcontainers//", "testcontainers"],
+      "groupName": "testcontainers"
     }
   ]
 }

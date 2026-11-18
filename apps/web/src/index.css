@@ -1,11 +1,13 @@
 @import "tailwindcss";
 @import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
 @import "@app/ui/tokens.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -44,4 +46,27 @@
 /* The Opini-style marker: a yellow block behind black text. */
 @utility highlight {
   @apply bg-highlight text-highlight-foreground px-1;
+}
+
+/* Syntax colors for the query editor. */
+:root {
+  --code-keyword: #000000;
+  --code-string: #8a5a00;
+  --code-number: #1d5fbf;
+  --code-name: #6b3fa0;
+  --code-type: #0f766e;
+}
+.dark {
+  --code-keyword: #fafb03;
+  --code-string: #f5c26b;
+  --code-number: #7cb7ff;
+  --code-name: #d6b4ff;
+  --code-type: #5eead4;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
 }

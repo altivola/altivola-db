@@ -1,23 +1,39 @@
-import type { Auth } from '@app/auth'
-import type { Sql } from '@app/db'
+import { type Conn, type Driver, errorMessage, type Manager, NotFoundError, type Store } from '@app/core'
 import { ORPCError, os } from '@orpc/server'
 import type { Jobs } from './jobs.ts'
 
 export type Context = {
-  sql: Sql
-  auth: Auth
+  store: Store
+  dbs: Manager
   jobs: Jobs
-  headers: Headers
-  // Sign in methods that are set up, so the login page only shows working options.
-  authProviders: AuthProvider[]
 }
-
-export type AuthProvider = 'email' | 'google' | 'github'
 
 export const pub = os.$context<Context>()
 
-export const authed = pub.use(async ({ context, next }) => {
-  const session = await context.auth.api.getSession({ headers: context.headers })
-  if (!session) throw new ORPCError('UNAUTHORIZED')
-  return next({ context: { user: session.user } })
-})
+/** Turns an error into an API error: unknown connections are 404, everything else the given status. */
+export function apiError(
+  e: unknown,
+  code: 'BAD_REQUEST' | 'BAD_GATEWAY' | 'CONFLICT' = 'BAD_REQUEST',
+): ORPCError<string, unknown> {
+  if (e instanceof ORPCError) return e
+  if (e instanceof NotFoundError) return new ORPCError('NOT_FOUND', { message: e.message })
+  return new ORPCError(code, { message: errorMessage(e) })
+}
+
+export function findConn(ctx: Context, id: string): Conn {
+  try {
+    return ctx.store.conn(id)
+  } catch (e) {
+    throw apiError(e)
+  }
+}
+
+/** The connection and its open driver. A database that does not answer is a 502. */
+export async function openConn(ctx: Context, id: string): Promise<{ conn: Conn; driver: Driver }> {
+  const conn = findConn(ctx, id)
+  try {
+    return { conn, driver: await ctx.dbs.get(conn) }
+  } catch (e) {
+    throw apiError(e, 'BAD_GATEWAY')
+  }
+}
