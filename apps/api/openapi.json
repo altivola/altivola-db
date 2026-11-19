@@ -83,7 +83,8 @@
                           "mysql",
                           "sqlite",
                           "sqlserver",
-                          "redis"
+                          "redis",
+                          "d1"
                         ],
                         "type": "string"
                       },
@@ -164,7 +165,8 @@
                         "mysql",
                         "sqlite",
                         "sqlserver",
-                        "redis"
+                        "redis",
+                        "d1"
                       ],
                       "type": "string"
                     },

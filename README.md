@@ -1,7 +1,7 @@
 # altivola-db
 
-A slim, local database client for **PostgreSQL**, **MySQL/MariaDB**, **SQLite**, **SQL Server**, **MongoDB** and
-**Redis**, with a built-in **MCP server** so AI agents (Claude Code, Claude Desktop, Cursor, and others) can query your
+A slim, local database client for **PostgreSQL**, **MySQL/MariaDB**, **SQLite**, **SQL Server**, **MongoDB**,
+**Redis** and **Cloudflare D1**, with a built-in **MCP server** so AI agents (Claude Code, Claude Desktop, Cursor, and others) can query your
 databases too.
 
 It runs on your machine (best in Docker), opens in your browser and only listens on localhost. Databases you reach
@@ -12,7 +12,7 @@ saved connections as they are.
 
 ## Features
 
-- **Connections** for PostgreSQL, MySQL/MariaDB, SQLite, SQL Server, MongoDB and Redis, saved locally, with an
+- **Connections** for PostgreSQL, MySQL/MariaDB, SQLite, SQL Server, MongoDB, Redis and Cloudflare D1, saved locally, with an
   optional read-only flag. A name like `team/dev/app` puts the connection in a `team` folder in the sidebar.
 - **Object tree**: schemas, tables and views (SQL), databases and collections (MongoDB), databases and keys (Redis),
   with a filter.
@@ -101,6 +101,7 @@ MongoDB dumps made by slimdb (`.mongo.gz`) import too.
 | SQL Server      | `sqlserver://sa:secret@localhost:1433?database=app`                       |
 | MongoDB         | `mongodb://localhost:27017/shop`                                          |
 | Redis           | `redis://:secret@localhost:6379/0` (`rediss://` for TLS)                  |
+| Cloudflare D1   | `d1://<api token>@<account id>/<database id>`                             |
 
 - Postgres `sslmode` works like it does in `psql`: `require` encrypts without checking the certificate.
 - With Docker, a SQLite file has to be mounted into the container, e.g. `-v ~/data:/sqlite`, then use
@@ -167,6 +168,14 @@ expressions like `/^ab/i`.
 One command per line, quoted like a shell: `HGETALL user:42`, `SET greeting "hello world"`. Pick the database (`db0`,
 `db1`, …) in the selector next to the connection name or by clicking it in the tree; double-clicking a key reads it
 with the command for its type. Redis results are not editable in the grid; use commands.
+
+### Cloudflare D1
+
+D1 is SQLite on Cloudflare, reached through its HTTP API, so the query editor, tree, describe and grid edits work like
+SQLite. Create an API token under My Profile > API Tokens with the account permission **D1: Edit** (or **D1: Read** for
+a read-only connection). The account id is on the Workers overview page and the database id in `wrangler.jsonc` or the
+D1 page. Each statement is one request; grid edits go out as one batch, which D1 runs as a transaction. D1 sends
+numbers as JSON, so integers above 2^53 lose precision. Dump, import and copy are not available for D1.
 
 ### Dump, import and copy
 

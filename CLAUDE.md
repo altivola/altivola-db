@@ -28,7 +28,8 @@
   queries too.
 - The read-only flag must be checked in every write path (query, apply, import, copy target).
 - Every driver change gets an integration test in `packages/core/test/` against a real database (testcontainers).
-  MongoDB tests use mongo:7.
+  MongoDB tests use mongo:7. Cloudflare D1 has no container: its tests run a real SQLite database behind a fake of
+  D1's `/raw` endpoint.
 - `connections.json` keeps slimdb's format, so slimdb files import as they are.
 - UI: shadcn/ui components in `apps/web/src/components/ui`, brand tokens in `packages/ui/tokens.css`. Yellow is a fill
   behind black text, never text on white.

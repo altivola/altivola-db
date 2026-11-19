@@ -116,6 +116,7 @@ function language(kind: Conn['kind'] | undefined) {
     case 'sqlserver':
       return [sql({ dialect: MSSQL }), source]
     case 'sqlite':
+    case 'd1':
       return [sql({ dialect: SQLite }), source]
     default:
       return [sql({ dialect: PostgreSQL }), source]

@@ -1,7 +1,7 @@
 // The shapes every driver shares, so the web UI and the MCP server treat
 // every database the same way.
 
-export const kinds = ['postgres', 'mongo', 'mysql', 'sqlite', 'sqlserver', 'redis'] as const
+export const kinds = ['postgres', 'mongo', 'mysql', 'sqlite', 'sqlserver', 'redis', 'd1'] as const
 export type Kind = (typeof kinds)[number]
 
 /** A grid cell. SQL drivers send text (like psql prints it), MongoDB sends JSON-friendly values. */

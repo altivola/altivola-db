@@ -44,8 +44,9 @@ export function kindFromURL(url: string): Kind {
   if (u.startsWith('sqlite:') || u.startsWith('file:')) return 'sqlite'
   if (u.startsWith('sqlserver://')) return 'sqlserver'
   if (u.startsWith('redis://') || u.startsWith('rediss://')) return 'redis'
+  if (u.startsWith('d1://')) return 'd1'
   throw new Error(
-    'unsupported URL scheme, use postgres://, mysql://, mariadb://, sqlserver://, sqlite:, mongodb:// or redis://',
+    'unsupported URL scheme, use postgres://, mysql://, mariadb://, sqlserver://, sqlite:, mongodb://, redis:// or d1://',
   )
 }
 

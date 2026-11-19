@@ -23,6 +23,7 @@ const letters: Record<string, string> = {
   mongo: 'MG',
   mysql: 'MY',
   sqlite: 'LI',
+  d1: 'D1',
   sqlserver: 'MS',
   redis: 'RD',
   string: 'K',
@@ -47,6 +48,7 @@ const kindColors: Record<string, string> = {
   redis: 'bg-[#fde8e8] text-[#9b1c1c] dark:bg-[#2e1515] dark:text-[#fca5a5]',
   mysql: 'bg-[#fdf0e1] text-[#9a4a00] dark:bg-[#2e2010] dark:text-[#fbbf77]',
   sqlite: 'bg-[#e0f4f4] text-[#0f6b6b] dark:bg-[#0f2626] dark:text-[#6ee0e0]',
+  d1: 'bg-[#fdebd8] text-[#8a4208] dark:bg-[#2a1a0c] dark:text-[#f6a35c]',
   sqlserver: 'bg-[#f0e8fc] text-[#5b21b6] dark:bg-[#231a33] dark:text-[#c4b5fd]',
 }
 

@@ -97,8 +97,9 @@ export function ConnDialog({ conn, onClose }: { conn?: Conn; onClose: () => void
               autoComplete="off"
             />
             <p className="text-xs text-muted-foreground">
-              postgres://, mysql://, mariadb://, sqlserver://, sqlite:///path/to/file.db, mongodb:// or redis://. Saved
-              in plain text in your config folder (file mode 0600).
+              postgres://, mysql://, mariadb://, sqlserver://, sqlite:///path/to/file.db, mongodb://, redis:// or
+              d1://&lt;api token&gt;@&lt;account id&gt;/&lt;database id&gt; (Cloudflare D1). Saved in plain text in your
+              config folder (file mode 0600).
             </p>
           </div>
           <Label className="flex items-center gap-2 font-normal">

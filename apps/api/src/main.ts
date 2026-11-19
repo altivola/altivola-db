@@ -1,4 +1,4 @@
-// altivola-db: a slim local database client for PostgreSQL, MySQL, SQLite,
+// altivola-db: a slim local database client for PostgreSQL, MySQL, SQLite, Cloudflare D1,
 // SQL Server, MongoDB and Redis, with a browser UI and an MCP server.
 
 import { spawn } from 'node:child_process'
@@ -31,7 +31,7 @@ const defaultAddr = '127.0.0.1:7789'
 
 const usage = (
   dir: string,
-) => `altivola-db: a slim database client for PostgreSQL, MySQL, SQLite, SQL Server, MongoDB and Redis
+) => `altivola-db: a slim database client for PostgreSQL, MySQL, SQLite, SQL Server, MongoDB, Redis and Cloudflare D1
 
 Usage:
   altivola-db [serve] [--addr ${defaultAddr}] [--no-browser]   start the web UI

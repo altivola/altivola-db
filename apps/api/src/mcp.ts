@@ -106,7 +106,8 @@ export function createMcpServer(store: Store, dbs: Manager, version: string) {
     {
       description:
         'Save a new connection. The URL starts with postgres://, mysql:// (also MariaDB), sqlserver://, sqlite: ' +
-        '(e.g. sqlite:///path/app.db), mongodb:// or mongodb+srv://, or redis:// (rediss:// for TLS).',
+        '(e.g. sqlite:///path/app.db), mongodb:// or mongodb+srv://, redis:// (rediss:// for TLS), ' +
+        'or d1://<api token>@<account id>/<database id> for Cloudflare D1.',
       inputSchema: {
         name: z.string().describe('a short unique name for the connection'),
         url: z.string().describe('connection URL, e.g. postgres://user:pass@localhost:5432/app'),

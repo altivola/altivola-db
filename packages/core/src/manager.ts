@@ -1,3 +1,4 @@
+import { openD1 } from './drivers/d1.ts'
 import { openMongo } from './drivers/mongo.ts'
 import { openMySQL } from './drivers/mysql.ts'
 import { openPostgres } from './drivers/postgres.ts'
@@ -23,6 +24,8 @@ export function openDriver(c: Pick<Conn, 'kind' | 'url' | 'readOnly'>): Promise<
       return openSQLServer(url, c.readOnly)
     case 'redis':
       return openRedis(url, c.readOnly)
+    case 'd1':
+      return openD1(url, c.readOnly)
   }
   throw new Error(`unknown connection kind ${JSON.stringify(c.kind)}`)
 }
