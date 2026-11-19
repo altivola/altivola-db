@@ -64,16 +64,17 @@ jobs:
             echo "$key=$value" >> "$GITHUB_ENV"
           done < .secrets/altivola-db/release.env
           rm -rf .secrets
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v5
         with:
           node-version: 24
+          cache: pnpm
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/desktop/src-tauri
       - name: Build the server and the web app
         run: |
-          corepack enable
           pnpm install --frozen-lockfile
           VERSION="${GITHUB_REF_NAME#v}" pnpm build
       - name: Set the app version from the tag
