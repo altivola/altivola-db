@@ -44,7 +44,11 @@ export function Results() {
   useEffect(() => setSaveError(''), [r])
 
   if (!tab || !conn) {
-    return <Empty>Results show up here.</Empty>
+    return (
+      <div className="h-full rounded-xl border bg-card">
+        <Empty>Results show up here.</Empty>
+      </div>
+    )
   }
 
   const setPending = (p: Pending | undefined) =>
@@ -82,62 +86,81 @@ export function Results() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="flex flex-wrap items-center gap-1 border-b px-2 py-1">
-        <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto" role="tablist">
-          {tab.results.map((x, i) => (
-            <button
-              key={i}
-              type="button"
-              role="tab"
-              aria-selected={i === tab.rtab}
-              title={x.statement}
-              onClick={() => updateTab(tab.id, { rtab: i })}
-              className={cn(
-                'shrink-0 rounded px-2 py-0.5 text-xs',
-                i === tab.rtab ? 'bg-foreground text-background' : 'text-muted-foreground hover:bg-muted',
-                x.error && 'text-destructive',
-                x.error && i === tab.rtab && 'bg-destructive text-white',
-              )}
-            >
-              {x.title || (tab.results.length > 1 ? `#${i + 1}` : 'Result')}
-            </button>
-          ))}
-        </div>
+    <div className="flex h-full min-h-0 flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-xs">
+        {tab.results.length > 1 ? (
+          <div className="flex min-w-0 gap-1 overflow-x-auto" role="tablist">
+            {tab.results.map((x, i) => (
+              <button
+                key={i}
+                type="button"
+                role="tab"
+                aria-selected={i === tab.rtab}
+                title={x.statement}
+                onClick={() => updateTab(tab.id, { rtab: i })}
+                className={cn(
+                  'h-6 shrink-0 rounded-md border px-2',
+                  i === tab.rtab
+                    ? 'border-input bg-muted font-medium'
+                    : 'border-transparent text-muted-foreground hover:bg-accent',
+                  x.error && 'text-destructive',
+                )}
+              >
+                {x.title || `#${i + 1}`}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <span className="text-[13px] font-semibold">{r?.title || 'Results'}</span>
+        )}
+        <span className="min-w-0 truncate text-muted-foreground">
+          {tab.running ? 'Running…' : r ? <Meta r={r} editable={editable} /> : null}
+        </span>
+        <span className="flex-1" />
         {editable && (
-          <div className="flex gap-1">
-            <Button size="xs" variant="outline" onClick={() => grid.addRow?.()}>
+          <>
+            <Button size="xs" variant="ghost" onClick={() => grid.addRow?.()}>
               + Row
             </Button>
             <Button
               size="xs"
-              variant="outline"
+              variant="ghost"
               onClick={() => grid.deleteRow?.()}
               title="Delete the selected row (Delete key)"
             >
               − Row
             </Button>
-            <Button size="xs" variant="outline" onClick={() => grid.setNull?.()} title="Set the selected cell to NULL">
+            <Button size="xs" variant="ghost" onClick={() => grid.setNull?.()} title="Set the selected cell to NULL">
               NULL
             </Button>
-            <Button size="xs" variant="outline" disabled={!n} onClick={() => setPending(undefined)}>
-              Revert
-            </Button>
-            <Button size="xs" disabled={!n || saving} onClick={submit} title="Save the changes in one go">
-              {n ? `Submit (${n})` : 'Submit'}
-            </Button>
-          </div>
+            {n > 0 && (
+              <>
+                <Button size="xs" variant="outline" onClick={() => setPending(undefined)}>
+                  Discard
+                </Button>
+                <Button
+                  size="xs"
+                  variant="highlight"
+                  disabled={saving}
+                  onClick={submit}
+                  title="Save the changes in one go"
+                >
+                  Submit {n} edit{n === 1 ? '' : 's'}
+                </Button>
+              </>
+            )}
+          </>
         )}
         {hasGrid && !!r.docs?.length && (
-          <div className="flex overflow-hidden rounded border text-xs">
+          <div className="flex rounded-md border border-input bg-muted p-0.5">
             {(['grid', 'json'] as const).map((v) => (
               <button
                 key={v}
                 type="button"
                 onClick={() => setView(v)}
                 className={cn(
-                  'px-2 py-0.5 capitalize',
-                  view === v ? 'bg-foreground text-background' : 'hover:bg-muted',
+                  'rounded px-2 py-0.5',
+                  view === v ? 'bg-background font-medium shadow-xs' : 'text-muted-foreground hover:text-foreground',
                 )}
               >
                 {v === 'json' ? 'JSON' : 'Grid'}
@@ -156,20 +179,12 @@ export function Results() {
           </>
         )}
       </div>
-      <div className="border-b px-3 py-1 text-xs text-muted-foreground">
-        {tab.running ? (
-          'Running…'
-        ) : saveError ? (
-          <span className="text-destructive">Not saved: {saveError}</span>
-        ) : r ? (
-          <Meta r={r} editable={editable} />
-        ) : null}
-      </div>
-      <div className="min-h-0 flex-1">
+      {saveError && <p className="px-1 text-xs text-destructive">Not saved: {saveError}</p>}
+      <div className="min-h-0 flex-1 overflow-hidden rounded-xl border bg-background">
         {!r ? (
           <Empty>Results show up here.</Empty>
         ) : r.error ? (
-          <pre className="m-3 whitespace-pre-wrap rounded border border-destructive/40 bg-destructive/10 p-3 font-mono text-sm text-destructive">
+          <pre className="m-3 whitespace-pre-wrap rounded-lg border border-destructive/40 bg-destructive/10 p-3 font-mono text-sm text-destructive">
             {r.error}
           </pre>
         ) : !hasGrid ? (
@@ -214,7 +229,7 @@ function Meta({ r, editable }: { r: Result; editable: boolean }) {
       {editable && r.edit && (
         <span>
           {' · '}
-          <span className="highlight">editable</span> ({r.edit.object}): double-click a cell
+          {r.edit.object}, double-click a cell to edit
         </span>
       )}
     </span>
@@ -280,7 +295,7 @@ function Grid({
   const virtual = useVirtualizer({
     count: refs.length,
     getScrollElement: () => scroller.current,
-    estimateSize: () => 26,
+    estimateSize: () => 28,
     overscan: 20,
   })
 
@@ -375,9 +390,9 @@ function Grid({
             <col key={i} style={{ width: w }} />
           ))}
         </colgroup>
-        <thead className="sticky top-0 z-10 bg-muted">
+        <thead className="sticky top-0 z-10 bg-card">
           <tr>
-            <th className="border-b border-r px-2 py-1 text-right font-normal text-muted-foreground">#</th>
+            <th className="border-b px-2 py-1.5 text-right font-normal text-muted-foreground">#</th>
             {r.columns.map((c, i) => {
               const isKey = editable && r.edit?.key.includes(r.edit.columns[i] ?? '')
               return (
@@ -388,7 +403,7 @@ function Grid({
                     (editable && !editableCol(r, conn, i) ? ', read-only' : '')
                   }
                   onClick={() => setSort((s) => ({ col: i, dir: s?.col === i ? (s.dir === 1 ? -1 : 1) : 1 }))}
-                  className="cursor-pointer select-none truncate border-b border-r px-2 py-1 text-left font-semibold hover:bg-background"
+                  className="cursor-pointer select-none truncate border-b px-2.5 py-1.5 text-left font-medium hover:bg-accent"
                 >
                   {c.name}
                   {c.type && <span className="ml-1 font-normal text-muted-foreground">{c.type}</span>}
@@ -411,7 +426,7 @@ function Grid({
             const deleted = !inserted && !!p.del[ref.row]
             return (
               <tr key={item.key} className={cn(deleted && 'line-through opacity-50', inserted && 'bg-highlight/20')}>
-                <td className="border-b border-r px-2 text-right text-muted-foreground">
+                <td className="border-b border-border/60 px-2 text-right text-muted-foreground">
                   {inserted ? '+' : ref.row + 1}
                 </td>
                 {r.columns.map((col, ci) => {
@@ -433,7 +448,7 @@ function Grid({
                         else setDialog({ title: col.name, text: isNull ? 'NULL' : prettyJSON(cellText(v)) })
                       }}
                       className={cn(
-                        'h-[26px] truncate border-b border-r px-2',
+                        'h-[28px] truncate border-b border-border/60 px-2.5',
                         isNull && 'italic text-muted-foreground',
                         numeric && !isNull && 'text-right',
                         change && 'bg-highlight text-highlight-foreground',

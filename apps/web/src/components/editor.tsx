@@ -56,7 +56,7 @@ export function appendToEditor(text: string) {
 }
 
 const highlight = HighlightStyle.define([
-  { tag: [t.keyword, t.operatorKeyword, t.modifier], color: 'var(--code-keyword)', fontWeight: '600' },
+  { tag: [t.keyword, t.operatorKeyword, t.modifier], color: 'var(--code-keyword)', fontWeight: '500' },
   { tag: [t.string, t.special(t.string), t.regexp], color: 'var(--code-string)' },
   { tag: [t.number, t.bool, t.null], color: 'var(--code-number)' },
   { tag: [t.comment, t.lineComment, t.blockComment], color: 'var(--muted-foreground)', fontStyle: 'italic' },
@@ -65,10 +65,15 @@ const highlight = HighlightStyle.define([
 ])
 
 const theme = EditorView.theme({
-  '&': { height: '100%', fontSize: '13px', backgroundColor: 'var(--background)', color: 'var(--foreground)' },
+  '&': { height: '100%', fontSize: '13px', backgroundColor: 'var(--card)', color: 'var(--foreground)' },
   '.cm-scroller': { fontFamily: 'var(--font-mono)', lineHeight: '1.55' },
   '.cm-content': { caretColor: 'var(--foreground)', padding: '8px 0' },
-  '.cm-gutters': { backgroundColor: 'var(--background)', color: 'var(--muted-foreground)', border: 'none' },
+  '.cm-gutters': {
+    backgroundColor: 'var(--card)',
+    color: 'var(--muted-foreground)',
+    border: 'none',
+    paddingLeft: '6px',
+  },
   '.cm-activeLine': { backgroundColor: 'color-mix(in oklab, var(--muted) 60%, transparent)' },
   '.cm-activeLineGutter': { backgroundColor: 'transparent', color: 'var(--foreground)' },
   '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection': {

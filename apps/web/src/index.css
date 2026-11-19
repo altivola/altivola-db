@@ -50,18 +50,18 @@
 
 /* Syntax colors for the query editor. */
 :root {
-  --code-keyword: #000000;
-  --code-string: #8a5a00;
+  --code-keyword: #7c3aed;
+  --code-string: #b45309;
   --code-number: #1d5fbf;
-  --code-name: #6b3fa0;
-  --code-type: #0f766e;
+  --code-name: #0f766e;
+  --code-type: #1d5fbf;
 }
 .dark {
-  --code-keyword: #fafb03;
-  --code-string: #f5c26b;
+  --code-keyword: #c792ea;
+  --code-string: #fafb03;
   --code-number: #7cb7ff;
-  --code-name: #d6b4ff;
-  --code-type: #5eead4;
+  --code-name: #5eead4;
+  --code-type: #7cb7ff;
 }
 
 html,

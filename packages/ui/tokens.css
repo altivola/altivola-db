@@ -2,29 +2,30 @@
  * Personal brand tokens: black, yellow #FAFB03, white (Opini.id style).
  * Yellow is a fill with black text, never text on white (contrast 1.1:1).
  * Names follow shadcn/ui so its components pick these up directly.
+ * `card` is the panel color: the editor and the grid sit on it.
  */
 :root {
   --radius: 0.625rem;
 
   --background: #ffffff;
-  --foreground: #000000;
-  --card: #ffffff;
-  --card-foreground: #000000;
+  --foreground: #0a0a0a;
+  --card: #fafafa;
+  --card-foreground: #0a0a0a;
   --popover: #ffffff;
-  --popover-foreground: #000000;
+  --popover-foreground: #0a0a0a;
 
   --primary: #000000;
   --primary-foreground: #ffffff;
-  --secondary: #ececec;
+  --secondary: #f2f2f2;
   --secondary-foreground: #000000;
-  --muted: #ececec;
-  --muted-foreground: #444444;
-  --accent: #fafb03;
+  --muted: #f2f2f2;
+  --muted-foreground: #666666;
+  --accent: #ececec;
   --accent-foreground: #000000;
   --destructive: #d92d20;
 
-  --border: #dfdfdf;
-  --input: #c4c4c4;
+  --border: #e5e5e5;
+  --input: #dfdfdf;
   --ring: #000000;
 
   --highlight: #fafb03;
@@ -32,25 +33,25 @@
 }
 
 .dark {
-  --background: #000000;
-  --foreground: #ffffff;
+  --background: #0a0a0a;
+  --foreground: #ededed;
   --card: #111111;
-  --card-foreground: #ffffff;
-  --popover: #111111;
-  --popover-foreground: #ffffff;
+  --card-foreground: #ededed;
+  --popover: #141414;
+  --popover-foreground: #ededed;
 
   --primary: #fafb03;
   --primary-foreground: #000000;
   --secondary: #1a1a1a;
-  --secondary-foreground: #ffffff;
+  --secondary-foreground: #ededed;
   --muted: #1a1a1a;
-  --muted-foreground: #c4c4c4;
-  --accent: #fafb03;
-  --accent-foreground: #000000;
+  --muted-foreground: #8f8f8f;
+  --accent: #222222;
+  --accent-foreground: #ffffff;
   --destructive: #f97066;
 
-  --border: #333333;
-  --input: #444444;
+  --border: #222222;
+  --input: #2a2a2a;
   --ring: #fafb03;
 
   --highlight: #fafb03;

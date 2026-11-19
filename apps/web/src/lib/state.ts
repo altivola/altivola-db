@@ -45,7 +45,7 @@ type State = {
   tabs: QTab[]
   active: string | null
   activeObject: string | null
-  filter: string
+  dialog: 'history' | 'transfer' | null
   limit: number
   view: 'grid' | 'json'
 }
@@ -59,7 +59,7 @@ export const useApp = create<State>(() => ({
   tabs: storage.get<SavedTab[]>('qtabs', []).map((t) => ({ ...t, results: [], rtab: 0, pending: {} })),
   active: storage.get<string | null>('qtab', null),
   activeObject: null,
-  filter: '',
+  dialog: null,
   limit: storage.get('limit', 500),
   view: 'grid',
 }))
@@ -302,8 +302,8 @@ export function setActiveObject(key: string | null) {
   set({ activeObject: key })
 }
 
-export function setFilter(filter: string) {
-  set({ filter })
+export function openDialog(dialog: State['dialog']) {
+  set({ dialog })
 }
 
 export function setView(view: 'grid' | 'json') {

@@ -1,5 +1,5 @@
 import { cn } from 'cn'
-import { History, Play, Plus, Square, X } from 'lucide-react'
+import { History, Lock, Play, Plus, Square, X } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -13,6 +13,7 @@ import {
   closeTab,
   hasDbSelect,
   newTab,
+  openDialog,
   type QTab,
   runQuery,
   setDatabase,
@@ -22,7 +23,7 @@ import {
 import { currentText, QueryEditor, wholeText } from './editor'
 import { HistoryDialog } from './history-dialog'
 import { Results } from './results'
-import { KindIcon } from './sidebar'
+import { KindIcon, StatusDot } from './sidebar'
 import { TransferDialog } from './transfer-dialog'
 
 const limits = [100, 500, 1000, 5000, 20000]
@@ -38,42 +39,77 @@ function run(mode: 'block' | 'all' | 'explain', analyze = false) {
 export function Workspace() {
   const tab = useApp((s) => s.tabs.find((t) => t.id === s.active))
   const conn = useApp((s) => activeConn(s))
+  const dialog = useApp((s) => s.dialog)
   const [analyze, setAnalyze] = useState(false)
-  const [dialog, setDialog] = useState<'history' | 'transfer' | null>(null)
 
   return (
     <div className="flex h-full min-w-0 flex-col">
-      <Toolbar
-        tab={tab}
-        conn={conn}
-        analyze={analyze}
-        setAnalyze={setAnalyze}
-        onHistory={() => setDialog('history')}
-        onTransfer={() => setDialog('transfer')}
-      />
-      <QueryTabs />
-      <ResizablePanelGroup orientation="vertical" id="altivola-db-editor" className="min-h-0 flex-1">
-        <ResizablePanel defaultSize="38%" minSize="60px">
-          <QueryEditor onRun={(mode) => run(mode)} />
-        </ResizablePanel>
-        <ResizableHandle />
-        <ResizablePanel minSize="120px">
-          <Results />
-        </ResizablePanel>
-      </ResizablePanelGroup>
-      {dialog === 'history' && conn && <HistoryDialog conn={conn} onClose={() => setDialog(null)} />}
-      {dialog === 'transfer' && conn && <TransferDialog src={conn} onClose={() => setDialog(null)} />}
+      <TopBar tab={tab} conn={conn} />
+      <div className="min-h-0 flex-1 p-3">
+        <ResizablePanelGroup orientation="vertical" id="altivola-db-editor">
+          <ResizablePanel defaultSize="38%" minSize="90px">
+            <div className="flex h-full flex-col overflow-hidden rounded-xl border bg-card">
+              <EditorBar tab={tab} conn={conn} analyze={analyze} setAnalyze={setAnalyze} />
+              <div className="min-h-0 flex-1">
+                <QueryEditor onRun={(mode) => run(mode)} />
+              </div>
+            </div>
+          </ResizablePanel>
+          <ResizableHandle className="h-3! bg-transparent" />
+          <ResizablePanel minSize="120px">
+            <Results />
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </div>
+      {dialog === 'history' && conn && <HistoryDialog conn={conn} onClose={() => openDialog(null)} />}
+      {dialog === 'transfer' && conn && <TransferDialog src={conn} onClose={() => openDialog(null)} />}
     </div>
   )
 }
 
-function Toolbar(props: {
+function TopBar({ tab, conn }: { tab: QTab | undefined; conn: Conn | undefined }) {
+  const busy = !!tab?.running
+  return (
+    <div className="flex items-center gap-2 border-b px-3 py-2">
+      <QueryTabs />
+      {conn && (
+        <span
+          className="flex max-w-72 shrink-0 items-center gap-2 rounded-full border border-input px-3 py-1 text-xs text-muted-foreground"
+          title={conn.readOnly ? 'Read-only: writes are refused' : 'Read and write'}
+        >
+          <StatusDot connId={conn.id} />
+          <span className="truncate">
+            {conn.name} · {conn.kind}
+          </span>
+          {conn.readOnly && <Lock className="size-3 shrink-0" aria-label="read-only" />}
+        </span>
+      )}
+      {busy && tab ? (
+        <Button size="sm" variant="destructive" onClick={() => cancelRun(tab.id)}>
+          <Square /> Cancel
+        </Button>
+      ) : (
+        <Button
+          size="sm"
+          variant="highlight"
+          disabled={!conn}
+          onClick={() => run('block')}
+          title="Run the selection or the block at the cursor"
+        >
+          <Play className="fill-current" /> Run <span className="font-medium opacity-60">{mac ? '⌘↵' : 'Ctrl ↵'}</span>
+        </Button>
+      )}
+    </div>
+  )
+}
+
+const mac = /Mac|iPhone|iPad/.test(navigator.platform)
+
+function EditorBar(props: {
   tab: QTab | undefined
   conn: Conn | undefined
   analyze: boolean
   setAnalyze: (v: boolean) => void
-  onHistory: () => void
-  onTransfer: () => void
 }) {
   const { tab, conn, analyze, setAnalyze } = props
   const limit = useApp((s) => s.limit)
@@ -82,21 +118,16 @@ function Toolbar(props: {
   const canDump = conn?.kind === 'postgres' || conn?.kind === 'mongo'
   const dbNames = tree?.nodes?.map((n) => n.name) ?? []
   if (tab?.db && !dbNames.includes(tab.db)) dbNames.push(tab.db)
+  const select = 'h-6 rounded-md border border-input bg-background px-1.5 text-xs'
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 border-b px-2 py-1.5">
-      <span
-        className="max-w-64 truncate px-1 text-sm font-semibold"
-        title={conn ? `${conn.kind}${conn.readOnly ? ', read-only' : ''}` : undefined}
-      >
-        {conn ? conn.name : 'No connection selected'}
-      </span>
+    <div className="flex flex-wrap items-center gap-1 border-b px-2 py-1.5 text-xs">
       {conn && hasDbSelect(conn) && (
         <select
           value={tab?.db ?? ''}
           onChange={(e) => setDatabase(e.target.value)}
           title={conn.kind === 'redis' ? 'Redis database' : 'MongoDB database'}
-          className="h-7 rounded-md border bg-background px-1.5 text-xs"
+          className={cn(select, 'mr-1')}
         >
           <option value="">(database from URL)</option>
           {dbNames.map((n) => (
@@ -107,49 +138,32 @@ function Toolbar(props: {
         </select>
       )}
       <Button
-        size="sm"
-        disabled={!conn || busy}
-        onClick={() => run('block')}
-        title="Run the selection or the block at the cursor (Ctrl/Cmd+Enter)"
-      >
-        <Play /> Run
-      </Button>
-      <Button
-        size="sm"
-        variant="outline"
+        size="xs"
+        variant="ghost"
         disabled={!conn || busy}
         onClick={() => run('all')}
-        title="Run the whole editor (Ctrl/Cmd+Shift+Enter)"
+        title={`Run the whole editor (${mac ? '⌘⇧↵' : 'Ctrl+Shift+Enter'})`}
       >
         Run all
       </Button>
       <Button
-        size="sm"
-        variant="outline"
+        size="xs"
+        variant="ghost"
         disabled={!conn || busy || conn.kind === 'redis'}
         onClick={() => run('explain', analyze)}
       >
         Explain
       </Button>
       <Label
-        className="gap-1.5 text-xs font-normal"
+        className="gap-1.5 px-1 text-xs font-normal text-muted-foreground"
         title="Run the statement for real timings (Postgres, MySQL and SQL Server roll it back)"
       >
         <Checkbox checked={analyze} onCheckedChange={(v) => setAnalyze(v === true)} /> analyze
       </Label>
-      {busy && tab && (
-        <Button size="sm" variant="destructive" onClick={() => cancelRun(tab.id)}>
-          <Square /> Cancel
-        </Button>
-      )}
       <span className="flex-1" />
-      <Label className="gap-1.5 text-xs font-normal">
+      <Label className="gap-1.5 px-1 text-xs font-normal text-muted-foreground">
         Limit
-        <select
-          value={limit}
-          onChange={(e) => setLimit(Number(e.target.value))}
-          className="h-7 rounded-md border bg-background px-1.5 text-xs"
-        >
+        <select value={limit} onChange={(e) => setLimit(Number(e.target.value))} className={select}>
           {limits.map((l) => (
             <option key={l} value={l}>
               {l}
@@ -157,21 +171,21 @@ function Toolbar(props: {
           ))}
         </select>
       </Label>
-      <Button size="sm" variant="ghost" disabled={!conn} onClick={props.onHistory}>
+      <Button size="xs" variant="ghost" disabled={!conn} onClick={() => openDialog('history')}>
         <History /> History
       </Button>
       <Button
-        size="sm"
-        variant="outline"
+        size="xs"
+        variant="ghost"
         disabled={!canDump}
-        onClick={props.onTransfer}
+        onClick={() => openDialog('transfer')}
         title={
           conn && !canDump
             ? 'Dump and import work for Postgres and MongoDB'
             : 'Copy this database into another connection, dump it to a file, or import a dump'
         }
       >
-        Dump / Import…
+        Dump / Import
       </Button>
     </div>
   )
@@ -193,11 +207,7 @@ function QueryTabs() {
   }
 
   return (
-    <div
-      className="flex items-end gap-0.5 overflow-x-auto border-b bg-muted/50 px-1 pt-1"
-      role="tablist"
-      aria-label="Query tabs"
-    >
+    <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto" role="tablist" aria-label="Query tabs">
       {tabs.map((t) => {
         const c = conns.find((x) => x.id === t.connId)
         const on = t.id === active
@@ -212,17 +222,23 @@ function QueryTabs() {
             onKeyDown={(e) => e.key === 'Enter' && activateTab(t.id)}
             onAuxClick={(e) => e.button === 1 && closeTab(t.id)}
             className={cn(
-              'group flex max-w-56 shrink-0 cursor-pointer items-center gap-1.5 rounded-t-md border border-b-0 px-2 py-1 text-xs',
-              on ? 'bg-background font-medium' : 'border-transparent text-muted-foreground hover:bg-background/60',
+              'group flex h-8 max-w-56 shrink-0 cursor-pointer items-center gap-2 rounded-lg border px-2.5 text-xs',
+              on
+                ? 'border-input bg-muted font-medium'
+                : 'border-transparent text-muted-foreground hover:bg-accent hover:text-foreground',
             )}
           >
-            {c && <KindIcon kind={c.kind} strong={on} />}
+            {c && <KindIcon kind={c.kind} />}
             <span className="truncate">{label(t)}</span>
             {t.running && <span className="size-1.5 animate-pulse rounded-full bg-foreground" title="Running" />}
             <button
               type="button"
               title="Close tab"
-              className="rounded p-0.5 opacity-60 hover:bg-muted hover:opacity-100"
+              aria-label="Close tab"
+              className={cn(
+                'rounded p-0.5 hover:bg-background',
+                on ? 'opacity-70 hover:opacity-100' : 'opacity-0 group-hover:opacity-70',
+              )}
               onClick={(e) => {
                 e.stopPropagation()
                 closeTab(t.id)
@@ -236,9 +252,10 @@ function QueryTabs() {
       <button
         type="button"
         title="New query tab for this connection"
+        aria-label="New query tab"
         disabled={!conn}
         onClick={() => conn && newTab(conn)}
-        className="mb-0.5 rounded p-1 text-muted-foreground hover:bg-background disabled:opacity-40"
+        className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40"
       >
         <Plus className="size-3.5" />
       </button>
