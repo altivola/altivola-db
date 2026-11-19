@@ -213,17 +213,24 @@ export function pendingCount(p: Pending | undefined): number {
 }
 
 /** Shows results in a tab, opening the first failed statement or the last one. */
-export function showResults(tabId: string, results: Result[], totalMs?: number) {
+/**
+ * Shows results in a tab, opening the first error, or else `open` (default:
+ * the last result, which is the last statement of a script).
+ */
+export function showResults(tabId: string, results: Result[], totalMs?: number, open?: number) {
   const firstError = results.findIndex((r) => r.error)
   updateTab(tabId, {
     results,
-    rtab: firstError >= 0 ? firstError : Math.max(results.length - 1, 0),
+    rtab: firstError >= 0 ? firstError : (open ?? Math.max(results.length - 1, 0)),
     totalMs,
     pending: {},
   })
 }
 
 const running = new Map<string, AbortController>()
+
+/** Bumped by every describe and query, so a late describe reply knows it is stale. */
+let describeSeq = 0
 
 export function cancelRun(tabId: string) {
   running.get(tabId)?.abort()
@@ -243,6 +250,8 @@ export async function runQuery(
   }
   const dirty = Object.values(tab.pending).some((p) => pendingCount(p) > 0)
   if (dirty && !keepPending && !confirm('Discard the unsaved changes in the results?')) return
+  // A describe still on its way (from the first click of a double-click) must not replace these results.
+  describeSeq++
   const ctrl = new AbortController()
   running.set(tab.id, ctrl)
   updateTab(tab.id, { running: true })
@@ -278,8 +287,6 @@ export async function runQuery(
   showResults(tab.id, results, Math.round(performance.now() - start))
 }
 
-let describeSeq = 0
-
 export async function describeObject(conn: Conn, node: TreeNode) {
   const tab = activeTab()
   if (!tab) return
@@ -290,7 +297,7 @@ export async function describeObject(conn: Conn, node: TreeNode) {
       object: node.object ?? node.name,
       database: node.database ?? '',
     })
-    if (seq === describeSeq) showResults(tab.id, results)
+    if (seq === describeSeq) showResults(tab.id, results, undefined, 0)
   } catch (e) {
     if (seq === describeSeq) {
       showResults(tab.id, [{ error: message(e), columns: [], rows: [], affected: 0, truncated: false, ms: 0 }])
