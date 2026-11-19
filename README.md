@@ -57,16 +57,18 @@ or, from a clone of this repo, `docker compose up -d`. Then open http://localhos
 The desktop app runs the same server inside the app, so it needs no Docker and reaches whatever your Mac reaches,
 VPN included. It keeps its data in `~/Library/Application Support/altivola-db` and listens on `127.0.0.1:7791`.
 
-There is no signed download yet. Build it yourself (needs Rust, from https://rustup.rs):
+Download `altivola-db_<version>_aarch64.dmg` from the [latest release](https://github.com/altivola/altivola-db/releases/latest)
+(Apple Silicon) and drag the app to Applications. It is not signed by Apple, so macOS blocks the first open: run
+`xattr -dr com.apple.quarantine /Applications/altivola-db.app`, or right-click the app and pick Open. After that the
+app checks for a new release when it starts and asks before it installs one.
+
+To build it yourself (needs Rust, from https://rustup.rs):
 
 ```sh
 pnpm install && pnpm build
 pnpm --filter @app/desktop build:app
 cp -R apps/desktop/src-tauri/target/release/bundle/macos/altivola-db.app /Applications/
 ```
-
-The app is not signed, so macOS may refuse to open a copy that came from another machine. Right-click it and pick
-Open, or run `xattr -dr com.apple.quarantine /Applications/altivola-db.app`.
 
 Dump, import and copy use `pg_dump`, `pg_restore` and `psql` from your machine: `brew install libpq` (the app also
 looks in Homebrew's libpq folder). To move connections from the Docker container:

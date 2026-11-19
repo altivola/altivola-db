@@ -4,11 +4,55 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::sync::Mutex;
-use tauri::{Manager, RunEvent, Url};
+use tauri::{AppHandle, Manager, RunEvent, Url};
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
 use tauri_plugin_shell::process::{CommandChild, CommandEvent};
 use tauri_plugin_shell::ShellExt;
+use tauri_plugin_updater::UpdaterExt;
 
 struct Server(Mutex<Option<CommandChild>>);
+
+fn stop_server(app: &AppHandle) {
+    if let Some(child) = app.state::<Server>().0.lock().unwrap().take() {
+        let _ = child.kill();
+    }
+}
+
+/// Asks to install a newer release from GitHub. Quietly does nothing when
+/// offline or already up to date.
+async fn check_for_update(app: AppHandle) {
+    let Ok(updater) = app.updater() else { return };
+    let Ok(Some(update)) = updater.check().await else { return };
+    let text = format!(
+        "altivola-db {} is out (you have {}). Install it and restart now?",
+        update.version, update.current_version
+    );
+    let handle = app.clone();
+    app.dialog()
+        .message(text)
+        .title("Update available")
+        .buttons(MessageDialogButtons::OkCancelCustom("Install".into(), "Later".into()))
+        .show(move |install| {
+            if !install {
+                return;
+            }
+            tauri::async_runtime::spawn(async move {
+                match update.download_and_install(|_, _| {}, || {}).await {
+                    Ok(()) => {
+                        stop_server(&handle);
+                        handle.restart();
+                    }
+                    Err(e) => {
+                        handle
+                            .dialog()
+                            .message(format!("The update failed: {e}"))
+                            .title("Update")
+                            .show(|_| {});
+                    }
+                }
+            });
+        });
+}
 
 /// Apps started from Finder get a bare PATH. pg_dump, pg_restore and psql
 /// (for dump and import) usually live in Homebrew, so look there too.
@@ -65,7 +109,10 @@ fn js_string(text: &str) -> String {
 fn main() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
+            tauri::async_runtime::spawn(check_for_update(app.handle().clone()));
             let script = app.path().resource_dir()?.join("server").join("altivola-db.js");
             let (mut events, child) = app
                 .shell()
@@ -120,9 +167,7 @@ fn main() {
 
     app.run(|handle, event| {
         if let RunEvent::Exit = event {
-            if let Some(child) = handle.state::<Server>().0.lock().unwrap().take() {
-                let _ = child.kill();
-            }
+            stop_server(handle);
         }
     });
 }

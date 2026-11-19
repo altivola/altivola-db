@@ -10,6 +10,9 @@
 - The image: `docker compose build`, then `docker compose up -d` (port 7789).
 - Desktop app: `pnpm build`, then `pnpm --filter @app/desktop build:app` (needs Rust). The app copies the Node binary
   and `apps/api/dist` in as a sidecar and opens the server's page on 127.0.0.1:7791.
+- Release: push a tag `vX.Y.Z`. CI publishes the image, then the macOS dmg and the updater files to the same GitHub
+  release. The updater signing key lives in altivola/secrets (`altivola-db/release.env`); never replace it, installed
+  apps only trust that key.
 
 ## Rules
 

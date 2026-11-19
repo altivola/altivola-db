@@ -1,6 +1,6 @@
 name: Release
 
-# Push a tag like v0.1.0 to publish ghcr.io/altivola/altivola-db.
+# Push a tag like v0.1.0 to publish ghcr.io/altivola/altivola-db and the macOS app.
 on:
   push:
     tags: ["v*"]
@@ -40,3 +40,56 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag
+
+  # The macOS app (Apple Silicon), added to the release the image job created.
+  # It is not signed by Apple; the updater files are signed with the key in
+  # altivola/secrets (altivola-db/release.env) so installed apps can update.
+  desktop:
+    needs: image
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
+        with:
+          repository: altivola/secrets
+          token: ${{ secrets.SECRETS_REPO_TOKEN }}
+          path: .secrets
+      - name: Load the updater key
+        run: |
+          while IFS='=' read -r key value; do
+            case "$key" in ''|\#*) continue ;; esac
+            echo "::add-mask::$value"
+            echo "$key=$value" >> "$GITHUB_ENV"
+          done < .secrets/altivola-db/release.env
+          rm -rf .secrets
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+      - name: Build the server and the web app
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          VERSION="${GITHUB_REF_NAME#v}" pnpm build
+      - name: Set the app version from the tag
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          jq --arg v "$v" '.version = $v' apps/desktop/src-tauri/tauri.conf.json > conf.json
+          mv conf.json apps/desktop/src-tauri/tauri.conf.json
+          sed -i '' "s/^version = \".*\"/version = \"$v\"/" apps/desktop/src-tauri/Cargo.toml
+          node apps/desktop/scripts/prepare.mjs
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: apps/desktop
+          tauriScript: pnpm tauri
+          args: --bundles app,dmg --config {"bundle":{"createUpdaterArtifacts":true}}
+          tagName: ${{ github.ref_name }}
+          releaseName: ${{ github.ref_name }}
+          includeUpdaterJson: true
