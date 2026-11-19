@@ -52,6 +52,30 @@ or, from a clone of this repo, `docker compose up -d`. Then open http://localhos
 - The image has the PostgreSQL 18 client tools (`pg_dump`, `pg_restore`, `psql`) for dump, import and copy.
 - Update: `docker compose pull && docker compose up -d`.
 
+## Desktop app (macOS)
+
+The desktop app runs the same server inside the app, so it needs no Docker and reaches whatever your Mac reaches,
+VPN included. It keeps its data in `~/Library/Application Support/altivola-db` and listens on `127.0.0.1:7791`.
+
+There is no signed download yet. Build it yourself (needs Rust, from https://rustup.rs):
+
+```sh
+pnpm install && pnpm build
+pnpm --filter @app/desktop build:app
+cp -R apps/desktop/src-tauri/target/release/bundle/macos/altivola-db.app /Applications/
+```
+
+The app is not signed, so macOS may refuse to open a copy that came from another machine. Right-click it and pick
+Open, or run `xattr -dr com.apple.quarantine /Applications/altivola-db.app`.
+
+Dump, import and copy use `pg_dump`, `pg_restore` and `psql` from your machine: `brew install libpq` (the app also
+looks in Homebrew's libpq folder). To move connections from the Docker container:
+`docker cp altivola-db:/data/connections.json ~/Library/Application\ Support/altivola-db/`, then change
+`host.docker.internal` back to `localhost` in that file.
+
+MCP for the desktop app: `claude mcp add altivola-db -- /Applications/altivola-db.app/Contents/MacOS/node
+/Applications/altivola-db.app/Contents/Resources/server/altivola-db.js mcp`.
+
 ## Coming from slimdb
 
 The connection file has the same format. Copy slimdb's file out of its container and import it:
@@ -252,6 +276,7 @@ packages/core   drivers (one per database), saved connections and history, grid 
 packages/api    oRPC procedures the UI and the REST API share
 apps/api        the server (Hono), CLI and MCP server, bundled into one file
 apps/web        the UI (React, CodeMirror, shadcn/ui)
+apps/desktop    the Tauri app: runs the server with a bundled Node and shows the UI
 ```
 
 Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).

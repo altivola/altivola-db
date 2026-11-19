@@ -8,11 +8,13 @@
 - Before saying something is done: `pnpm exec biome ci . && pnpm typecheck && pnpm test && pnpm build`
 - After changing any procedure: `pnpm openapi` and commit `apps/api/openapi.json`.
 - The image: `docker compose build`, then `docker compose up -d` (port 7789).
+- Desktop app: `pnpm build`, then `pnpm --filter @app/desktop build:app` (needs Rust). The app copies the Node binary
+  and `apps/api/dist` in as a sidecar and opens the server's page on 127.0.0.1:7791.
 
 ## Rules
 
 - This is a local tool: it runs on the user's machine (usually in Docker) so it can reach databases behind a VPN.
-  Do not add a hosted deploy.
+  Do not add a hosted deploy. The desktop app (Tauri) only wraps the same server; keep app logic in the server and web.
 - The server only answers loopback hosts and needs the per-run token on `/rpc`, `/api` and `/files`. Keep both checks
   on every new route. No CORS.
 - Each database has one driver in `packages/core/src/drivers/` behind the `Driver` interface in `types.ts`. SQL

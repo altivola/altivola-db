@@ -1,0 +1,13 @@
+{
+  "name": "@app/desktop",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri",
+    "sidecar": "node scripts/prepare.mjs",
+    "build:app": "node scripts/prepare.mjs && tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.12.4"
+  }
+}

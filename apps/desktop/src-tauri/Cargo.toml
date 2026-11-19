@@ -1,0 +1,12 @@
+[package]
+name = "altivola-db"
+version = "0.2.0"
+description = "altivola-db desktop app"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
