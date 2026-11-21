@@ -2,7 +2,7 @@
 
 Thanks for helping out.
 
-1. Follow the quick start in the README to run the app locally.
+1. Follow the Development section in docs/guide.md to run the app locally.
 2. Make your change on a branch. Keep pull requests small and focused on one thing.
 3. Run the same checks as CI before you push:
 

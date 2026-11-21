@@ -56,6 +56,7 @@ async fn check_for_update(app: AppHandle) {
 
 /// Apps started from Finder get a bare PATH. pg_dump, pg_restore and psql
 /// (for dump and import) usually live in Homebrew, so look there too.
+#[cfg(target_os = "macos")]
 fn tool_path() -> String {
     let extra = [
         "/opt/homebrew/bin",
@@ -69,6 +70,12 @@ fn tool_path() -> String {
         parts.push(path);
     }
     parts.join(":")
+}
+
+/// Windows and Linux start apps with the user's full PATH, so keep it as it is.
+#[cfg(not(target_os = "macos"))]
+fn tool_path() -> String {
+    std::env::var("PATH").unwrap_or_default()
 }
 
 /// The server prints "altivola-db <version> running at http://127.0.0.1:<port> (...)".
