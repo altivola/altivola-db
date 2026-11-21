@@ -5,10 +5,10 @@ A light database client that runs on your own computer. One app for **PostgreSQL
 
 ## Download
 
-| | |
-| --- | --- |
-| **macOS** (Apple Silicon) | [**altivola-db-macos-arm64.dmg**](https://github.com/altivola/altivola-db/releases/latest/download/altivola-db-macos-arm64.dmg) |
-| **Windows** (x64) | [**altivola-db-windows-x64-setup.exe**](https://github.com/altivola/altivola-db/releases/latest/download/altivola-db-windows-x64-setup.exe) |
+|                           |                                                                                                                                             |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **macOS** (Apple Silicon) | [**altivola-db-macos-arm64.dmg**](https://github.com/altivola/altivola-db/releases/latest/download/altivola-db-macos-arm64.dmg)             |
+| **Windows** (x64)         | [**altivola-db-windows-x64-setup.exe**](https://github.com/altivola/altivola-db/releases/latest/download/altivola-db-windows-x64-setup.exe) |
 
 The apps are not signed yet, so the first open needs one extra step:
 
